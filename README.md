@@ -9,8 +9,8 @@ go run main.go -s
 
 # in another shell
 # inspect
-go run main.go -s
+go run main.go -c
 
 # call Foo method
-go run main.go -s
+go run main.go -a
 ```
