@@ -3,7 +3,7 @@ package dbusdaemon
 import (
 	"encoding/json"
 
-	"create-net.org/lcapra/dbus-http-proxy/log"
+	"create-net.org/lcapra/dbus-test/log"
 	"github.com/godbus/dbus"
 	"github.com/godbus/dbus/introspect"
 )

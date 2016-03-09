@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"create-net.org/lcapra/dbus-http-proxy/dbusdaemon"
-	"create-net.org/lcapra/dbus-http-proxy/log"
+	"create-net.org/lcapra/dbus-test/dbusdaemon"
+	"create-net.org/lcapra/dbus-test/log"
 	"github.com/codegangsta/cli"
 )
 
