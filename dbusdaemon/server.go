@@ -8,6 +8,7 @@ import (
 
 	"github.com/godbus/dbus"
 	"github.com/godbus/dbus/introspect"
+	"github.com/godbus/dbus/prop"
 )
 
 const (
@@ -17,14 +18,6 @@ const (
 	DbusInterface = "org.agile.HttpProxy" // DBUS Interface
 )
 
-const intro = `
-<node>
-	<interface name="` + DbusInterface + `">
-		<method name="Foo">
-			<arg direction="out" type="s"/>
-		</method>
-	</interface>` + introspect.IntrospectDataString + `</node> `
-
 type foo string
 
 func (f foo) Foo() (string, *dbus.Error) {
@@ -32,9 +25,30 @@ func (f foo) Foo() (string, *dbus.Error) {
 	return string(f), nil
 }
 
+func (f foo) FooPlus(what string) (string, *dbus.Error) {
+	r := string(f) + " plus < " + what + " >"
+	fmt.Println(r)
+	return r, nil
+}
+
+// PropsSpec lists the available properties of the interface
+var PropsSpec = map[string]map[string]*prop.Prop{
+	DbusInterface: {
+		"SomeInt": {
+			int32(0),
+			true,
+			prop.EmitTrue,
+			func(c *prop.Change) *dbus.Error {
+				log.Info(c.Name, "changed to", c.Value)
+				return nil
+			},
+		},
+	},
+}
+
 // CreateInterfaces create a dbus server to expose services
 func CreateInterfaces() (err error) {
-	log.Debug("Init session bus")
+	log.Debug("Getting session bus conn")
 	conn, err := dbus.SessionBus()
 	if err != nil {
 		return err
@@ -50,12 +64,31 @@ func CreateInterfaces() (err error) {
 		return errors.New(DbusInterface + " name already taken")
 	}
 
-	log.Debug("Export Foo")
 	f := foo("Bar!")
+
+	log.Debug("Export Foo")
 	conn.Export(f, DbusObjectPath, DbusInterface)
-	log.Debug("Export introspectable")
-	conn.Export(introspect.Introspectable(intro), DbusObjectPath,
+
+	props := prop.New(conn, DbusObjectPath, PropsSpec)
+	n := &introspect.Node{
+		Name: DbusObjectPath,
+		Interfaces: []introspect.Interface{
+			introspect.IntrospectData,
+			prop.IntrospectData,
+			{
+				Name:       DbusInterface,
+				Methods:    introspect.Methods(f),
+				Properties: props.Introspection(DbusInterface),
+			},
+		},
+	}
+
+	log.Debug("Export interfaces")
+	conn.Export(introspect.NewIntrospectable(n), DbusObjectPath,
 		"org.freedesktop.DBus.Introspectable")
+
+	// conn.Export(introspect.Introspectable(intro), DbusObjectPath,
+	// 	"org.freedesktop.DBus.Introspectable")
 
 	log.Debug("Listening on " + DbusInterface + " / " + DbusObjectPath)
 

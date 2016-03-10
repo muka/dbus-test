@@ -12,8 +12,8 @@ import (
 func main() {
 
 	app := cli.NewApp()
-	app.Name = "dbus-http-proxy"
-	app.Usage = "make an explosive entrance"
+	app.Name = "dbus-test"
+	app.Usage = "manage dbus service and query for its services"
 
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
@@ -21,12 +21,16 @@ func main() {
 			Usage: "start server",
 		},
 		cli.BoolFlag{
-			Name:  "client, c",
-			Usage: "start client",
+			Name:  "inspect, i",
+			Usage: "inspect service",
 		},
 		cli.BoolFlag{
-			Name:  "call, a",
-			Usage: "call Foo",
+			Name:  "call, c",
+			Usage: "call Foo and FooPlus",
+		},
+		cli.BoolFlag{
+			Name:  "property, p",
+			Usage: "change property and receive a signal update",
 		},
 	}
 
@@ -38,10 +42,41 @@ func main() {
 		}
 
 		if c.Bool("call") {
+			log.Debug("Call Foo")
 			dbusdaemon.Call("Foo")
+			log.Debug("Call FooPlus")
+			dbusdaemon.Call("FooPlus", "ciao ciao")
 		}
 
-		if c.Bool("client") {
+		if c.Bool("property") {
+
+			log.Debug("Register for proeprty signal SomeInt")
+			err := dbusdaemon.RegisterSignal("SomeInt")
+			if err != nil {
+				log.Critical(err)
+				panic(err)
+			}
+
+			log.Debug("Get SomeInt")
+			val, err := dbusdaemon.Get("SomeInt", int32(42))
+			if err != nil {
+				log.Error("Error calling set")
+				log.Critical(err)
+				panic(err)
+			}
+
+			log.Debug("Current value", val)
+
+			log.Debug("Set SomeInt=42")
+			err = dbusdaemon.Set("SomeInt", int32(42))
+			if err != nil {
+				log.Error("Error calling set")
+				log.Critical(err)
+				panic(err)
+			}
+		}
+
+		if c.Bool("inspect") {
 			result, err := dbusdaemon.Introspect(dbusdaemon.DbusInterface, dbusdaemon.DbusObjectPath)
 			if err != nil {
 				log.Critical(err)
